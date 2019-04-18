@@ -8,43 +8,58 @@
  */
 
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View} from 'react-native';
+import {TouchableHighlight, Platform, StyleSheet, Text, View, StatusBar} from 'react-native';
 
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-  android:
-    'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
+import { createSwitchNavigator, createStackNavigator, createDrawerNavigator, createAppContainer } from "react-navigation";
+
+import { Provider } from "mobx-react";
+import stores from "./app/stores";
+
+import AppHeader from './app/components/AppHeader';
+import TestHeader from './app/components/TestHeader';
+import SignIn from './app/screens/SignIn';
+import Tasklist from './app/screens/Tasklist';
+import TaskDetail from './app/screens/TaskDetail';
+import History from './app/screens/History';
+import Main from './app/screens/Main';
+import Settings from './app/screens/Settings';
+import NewPassword from './app/screens/NewPassword';
+
+const StackTasklist = createStackNavigator({
+  Tasklist: {
+    screen: Tasklist,
+    navigationOptions: {
+      headerLayoutPreset: 'center',
+      header: props => <TestHeader {...props} />
+    }
+  },
+  TaskDetail: {screen: TaskDetail},
 });
 
-type Props = {};
-export default class App extends Component<Props> {
+const MainNavigator = createDrawerNavigator({
+  'Lista de Tareas': StackTasklist,
+  'Historial': {screen: History},
+  'Ajustes': {screen: Settings},
+  Main: {screen: Main},
+});
+
+const AuthenticationNavigator = createSwitchNavigator({
+  Main: MainNavigator,
+  Home: {
+    screen: SignIn,
+  },
+  NewPassword: {
+    screen: NewPassword,
+  },
+});
+
+const AppContainer = createAppContainer(AuthenticationNavigator);
+export default class App extends React.Component {
   render() {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>Welcome to React Native!</Text>
-        <Text style={styles.instructions}>To get started, edit App.js</Text>
-        <Text style={styles.instructions}>{instructions}</Text>
-      </View>
+    return(
+      <Provider {...stores}>
+        <AppContainer/>
+      </Provider>
     );
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
-  },
-});
