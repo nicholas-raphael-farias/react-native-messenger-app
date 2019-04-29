@@ -4486,6 +4486,10 @@ react-native-easy-grid@0.2.1, react-native-easy-grid@^0.2.1:
   dependencies:
     lodash "4.17.11"
 
+react-native-geolocation-service@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/react-native-geolocation-service/-/react-native-geolocation-service-2.0.0.tgz#9fbab4953726b3a3ca9a74388a92dc1e1997127a"
+
 react-native-gesture-handler@^1.0.17:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/react-native-gesture-handler/-/react-native-gesture-handler-1.1.0.tgz#2a7d545ad2e0ca23adce22b2af441ad360ecccee"
@@ -4773,7 +4777,7 @@ regjsparser@^0.6.0:
   dependencies:
     jsesc "~0.5.0"
 
-remove-trailing-separator@^1.0.1, remove-trailing-separator@^1.1.0:
+remove-trailing-separator@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/remove-trailing-separator/-/remove-trailing-separator-1.1.0.tgz#c24bce2a283adad5bc3f58e0d48249b92379d8ef"
 

@@ -17,9 +17,11 @@ import stores from "./app/stores";
 
 import AppHeader from './app/components/AppHeader';
 import TestHeader from './app/components/TestHeader';
+import HistoryHeader from './app/components/HistoryHeader';
 import SignIn from './app/screens/SignIn';
 import Tasklist from './app/screens/Tasklist';
 import TaskDetail from './app/screens/TaskDetail';
+import HistoryTaskDetail from './app/screens/HistoryTaskDetail';
 import History from './app/screens/History';
 import Main from './app/screens/Main';
 import Settings from './app/screens/Settings';
@@ -33,21 +35,57 @@ const StackTasklist = createStackNavigator({
       header: props => <TestHeader {...props} />
     }
   },
-  TaskDetail: {screen: TaskDetail},
+  TaskDetail: {
+    screen: TaskDetail,
+    navigationOptions: ({ navigation }) => ({
+      title: `Tarea ${navigation.state.params.task.id}`,
+      headerStyle: {backgroundColor: '#2d2e2c'},
+      headerTintColor: '#fff',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        color: '#fff',
+      },
+    }),
+  },
 });
+
+
+const HistoryStackTasklist = createStackNavigator({
+  History: {
+    screen: History,
+    navigationOptions: {
+      headerLayoutPreset: 'center',
+      header: props => <HistoryHeader {...props} />
+    }
+  },
+  HistoryTaskDetail: {
+    screen: HistoryTaskDetail,
+    navigationOptions: ({ navigation }) => ({
+      title: `Tarea ${navigation.state.params.task.id}`,
+      headerStyle: {backgroundColor: '#2d2e2c'},
+      headerTintColor: '#fff',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        color: '#fff',
+      },
+    }),
+  },
+});
+
+
 
 const MainNavigator = createDrawerNavigator({
   'Lista de Tareas': StackTasklist,
-  'Historial': {screen: History},
+  'Historial': HistoryStackTasklist,
   'Ajustes': {screen: Settings},
   Main: {screen: Main},
 });
 
 const AuthenticationNavigator = createSwitchNavigator({
-  Main: MainNavigator,
   Home: {
     screen: SignIn,
   },
+  Main: MainNavigator,
   NewPassword: {
     screen: NewPassword,
   },

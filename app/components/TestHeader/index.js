@@ -9,6 +9,11 @@ import {observer} from 'mobx-react';
 @observer
 class TestHeader extends React.Component {
 
+
+  componentDidMount(){
+
+  }
+
   @computed get onDutyStatus() {
     return MessengerStore.onDuty;
   }
@@ -24,7 +29,6 @@ class TestHeader extends React.Component {
 
   render() {
     return(
-      <Container>
         <Header style={styles.header}>
           <Left style={{flex: 1}}>
             <TouchableOpacity onPress={() => {this.props.navigation.openDrawer();} }>
@@ -41,7 +45,6 @@ class TestHeader extends React.Component {
             <Text></Text>
           </Right>
         </Header>
-      </Container>
       );
   }
 }

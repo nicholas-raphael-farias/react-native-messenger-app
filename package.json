@@ -16,6 +16,7 @@
     "react": "16.6.3",
     "react-native": "0.58.6",
     "react-native-easy-grid": "^0.2.1",
+    "react-native-geolocation-service": "^2.0.0",
     "react-native-gesture-handler": "^1.0.17",
     "react-navigation": "^3.3.2",
     "remove-trailing-separator": "^1.1.0",
