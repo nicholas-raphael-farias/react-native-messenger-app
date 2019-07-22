@@ -85,9 +85,14 @@ class Tasklist extends React.Component {
     return (
       <Container style={styles.container}>
         <Grid style={{marginLeft: 0, paddingLeft: 0}}>
-          <Col style={{marginLeft: 0, paddingLeft: 0}}>
-            { MessengerStore.onDuty ? this.deliveries : <NotActiveMessage/> }
-          </Col>
+          <Row style={styles.titleContainer}>
+            <Text style={styles.listTitle}>Lista de tareas</Text>
+          </Row>
+          <Row>
+            <Col style={{marginLeft: 0, paddingLeft: 0}}>
+              { MessengerStore.onDuty ? this.deliveries : <NotActiveMessage/> }
+            </Col>
+          </Row>
         </Grid>
       </Container>
     );
@@ -123,7 +128,21 @@ const styles = StyleSheet.create({
     left:16,
     width:16,
     height:16,
-  }
+  },
+  titleContainer:{
+    marginLeft: 0, 
+    paddingLeft: 0,
+    paddingTop:8,
+    paddingBottom:8,
+    alignItems: 'center',
+    justifyContent: 'center', 
+    height:40,
+  },
+  listTitle:{
+    color: "#FFF",
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
 });
 
 export default Tasklist;

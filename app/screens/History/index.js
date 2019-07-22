@@ -12,7 +12,6 @@ class History extends React.Component {
 
   @computed get taskHistory(){
     let deliveries = MessengerStore.taskHistory;
-    console.warn('updating history');
     let deliveriesList = deliveries.map(delivery => {
       if (delivery.tasks) {
         return(delivery.tasks.map(task => 

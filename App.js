@@ -11,7 +11,7 @@ import React, {Component} from 'react';
 import {TouchableHighlight, Platform, StyleSheet, Text, View, StatusBar} from 'react-native';
 
 import { createSwitchNavigator, createStackNavigator, createDrawerNavigator, createAppContainer } from "react-navigation";
-
+import {Root} from "native-base";
 import { Provider } from "mobx-react";
 import stores from "./app/stores";
 
@@ -72,13 +72,15 @@ const HistoryStackTasklist = createStackNavigator({
   },
 });
 
-
-
 const MainNavigator = createDrawerNavigator({
   'Lista de Tareas': StackTasklist,
   'Historial': HistoryStackTasklist,
   'Ajustes': {screen: Settings},
-  Main: {screen: Main},
+  'Cerrar Sesion': {screen: Main,
+    navigationOptions: ({ navigation }) => ({
+      drawerLockMode: "locked-closed",
+    }),
+  },
 });
 
 const AuthenticationNavigator = createSwitchNavigator({
@@ -96,7 +98,9 @@ export default class App extends React.Component {
   render() {
     return(
       <Provider {...stores}>
-        <AppContainer/>
+        <Root>
+          <AppContainer/>
+        </Root>
       </Provider>
     );
   }

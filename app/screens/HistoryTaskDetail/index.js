@@ -30,8 +30,20 @@ class HistoryTaskDetail extends React.Component {
 
 
   @computed get selectedTask(){
-    console.warn(MessengerStore.selectedHistoryTask);
     return MessengerStore.selectedHistoryTask;
+  }
+
+  @computed get messengerVehicle(){
+    const vehicleIndex = MessengerStore.messenger.vehicle;
+    let vehicleString;
+    if (vehicleIndex === "0") {
+      vehicleString="walking";
+    } else if (vehicleIndex === "1") {
+      vehicleString="bicycling";
+    } else {
+      vehicleString="driving";
+    }
+    return vehicleString;
   }
 
   render() {
@@ -43,7 +55,7 @@ class HistoryTaskDetail extends React.Component {
               <Text style={styles.taskAddress}>{this.state.task.attrs.address}</Text>
               <Text style={styles.taskAddress}>{this.state.task.attrs.recipient}</Text>
             </Col>
-            <Col style={{ width: 80 }} onPress={() => Linking.openURL(`http://maps.google.com/?daddr=${this.state.task.attrs.address.replace(' ','+')}`)}>
+            <Col style={{ width: 80 }} onPress={() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${this.state.task.attrs.address.replace(' ','+')}&travelmode=${this.messengerVehicle}`)}>
               <TouchableOpacity>
                 <Image 
                   style={styles.listIcon} 

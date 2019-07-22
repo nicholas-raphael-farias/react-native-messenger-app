@@ -52,7 +52,7 @@ export default class NewPassword extends Component {
         <KeyboardAvoidingView style={styles.container}>
           <Text style={styles.titleText}>Actualizar Contraseña</Text>
           <View style={styles.inputContainer}>
-            <Image style={styles.inputIcon} source={{uri: 'https://png.icons8.com/message/ultraviolet/50/3498db'}}/>
+            <Image style={styles.inputIcon} source={{uri: 'https://png.icons8.com/key-2/ultraviolet/50/3498db'}}/>
             <TextInput style={styles.inputs}
                 placeholder="Contraseña"
                 secureTextEntry={true}

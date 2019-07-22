@@ -8,7 +8,7 @@ import NewPassword from '../screens/NewPassword';
 import Geolocation from 'react-native-geolocation-service';
 import {PermissionsAndroid} from 'react-native';
 
-const API_URL = 'https://bb1aadd4.ngrok.io';
+const API_URL = 'https://98a2af92.ngrok.io';
 
 const socket = io(API_URL, {
   transports: ['websocket'],
@@ -21,6 +21,8 @@ client.configure(socketio(socket));
 class MessengerStore {
   @observable phone;
   @observable password;
+  @observable auxPhone;
+  @observable auxPassword;
   @observable isLogged = false;
   @observable isActive = false;
   @observable onDuty = false;
@@ -45,15 +47,41 @@ class MessengerStore {
 
   constructor(){
     client.service('deliveries').on('patched', patchedDelivery => {
+
+      if(patchedDelivery.state === -1) {
+
+        const deliveryIndex = this.deliveries.findIndex(delivery => (delivery.id === patchedDelivery.id));
+        if (deliveryIndex !== -1) {
+          this.deliveries.splice(deliveryIndex,1); 
+        }
+      } else if(patchedDelivery.messengerId === this.messenger.id) {
+
         client.service('deliveries_and_tasks').find({'query': {'deliveryId': patchedDelivery.id}}).then((deliveryWithTasks) => {
-          this.deliveries.push(deliveryWithTasks[0]);
+          console.warn(deliveryWithTasks);
+          let delivery = deliveryWithTasks[0];
+          let tasks = delivery.tasks.sort((a, b) => parseInt(a.order) - parseInt(b.order));
+          tasks.forEach(task => task.state = 1);
+          delivery.tasks = tasks;
+          console.warn(delivery.tasks);
+          this.deliveries.push(delivery);
         });
+
+      }
     });
 
-    client.service('deliveries').on('removed', removedDelivery => {
-      const deliveryIndex = this.deliveries.findIndex(delivery => (delivery.id === removedDelivery.id));
-      this.deliveries.splice(deliveryIndex,1);
+    client.service('autoassign_signal').on('status', data => {
+      client.service('deliveries_and_tasks').find({'query': {'deliveryId': data.deliveryId}}).then((deliveryWithTasks) => {
+      console.warn(deliveryWithTasks);
+      let deliveries = this.deliveries;
+      const index = deliveries.findIndex(({id}) => id === data.deliveryId);
+      let delivery = deliveries[index];
+      let filteredTasks = deliveryWithTasks[0].tasks.filter(task => task.state !== 3);
+      delivery.tasks = filteredTasks.sort((a, b) => parseInt(a.order) - parseInt(b.order));
+      deliveries[index] = delivery;
+      this.deliveries = deliveries;
+      });
     });
+
   }
 
 
@@ -68,6 +96,18 @@ class MessengerStore {
 
   @action setPassword(password) {
     this.password = password;
+  }
+
+  @action setAuxPhone(phone) {
+    this.auxPhone = phone;
+  }
+
+  @action setAuxPassword(password) {
+    this.auxPassword = password;
+  }
+
+  @action setAuxIsLogged(logged) {
+    this.auxIsLogged = logged;
   }
 
   @action setMessenger(messenger) {
@@ -205,11 +245,16 @@ class MessengerStore {
         this.onDuty = this.messenger.on_duty;
         this.isLogged = true;
         this.deliveriesService.find({'query': {'messengerId': this.messenger.id}}).then(deliveries => {
-          this.deliveries = deliveries;
+          let deliveriess = deliveries.map(delivery => {
+            delivery.tasks = delivery.tasks.sort(function(task_a, task_b) {
+              return task_a.order - task_b.order;
+            });
+            return delivery;
+          });
+          this.deliveries = deliveriess;
         });
 
         this.historyService.find({'query':{'messengerId': this.messenger.id}}).then((deliveries) => {
-          console.warn(deliveries);
           this.taskHistory = deliveries;
         });
   
@@ -232,11 +277,48 @@ class MessengerStore {
     });
   }
 
+  @action async auxAuthMessenger() {
+    this.messengersService = client.service('messengers');
+    this.deliveriesService = client.service('messenger_deliveries');
+    this.historyService = client.service('messenger_history');
+
+    await this.messengersService.find({'query': {'phone': this.auxPhone, 'password': this.auxPassword}}).then((result) => {
+      if (result.length > 0) {
+        this.messenger = result[0];
+        this.isActive = this.messenger.is_active;
+        this.onDuty = this.messenger.on_duty;
+        this.auxIsLogged = true;
+        this.deliveriesService.find({'query': {'messengerId': this.messenger.id}}).then(deliveries => {
+          this.deliveries = deliveries;
+        });
+
+        this.historyService.find({'query':{'messengerId': this.messenger.id}}).then((deliveries) => {
+          this.taskHistory = deliveries;
+        });
+  
+
+
+        if(this.isActive && this.onDuty){
+          this.watchID = Geolocation.watchPosition(
+            (l) => this.updateLocation(l), 
+            (e) => this.errorGeolocating(e),
+            {
+              enableHighAccuracy: true, 
+              distanceFilter: 25
+          });
+
+        }
+      } else {
+        this.auxPhone = '';
+        this.auxPassword = '';
+      }
+    });
+  }
+
   @action async changeState(taskId, state) {
     this.tasksService = client.service('update_task_state');
 
     await this.tasksService.patch(taskId, {'state': state}).then((updatedTask) => {
-      console.warn(updatedTask);
       let updatedDeliveries = this.deliveries.map(delivery => {
         let tasks = delivery.tasks;
         const taskIndex = tasks.findIndex(({id}) => id === updatedTask.id);
@@ -252,12 +334,13 @@ class MessengerStore {
       this.deliveries = updatedDeliveries;
 
       if (state === 2) {
-      
-        if(this.updatedTask.attrs.recipient !== 'NO_RECIPIENT'){
-          client.service('send_tracking_page_sms').create({'taskId': updatedTask.id, 'phone': this.updatedTask.attrs.phone}).then(as => {
-          });
-        }
-        
+
+        if(this.updatedTask.attrs.recipient !== undefined){
+
+          if(this.updatedTask.attrs.recipient !== 'NO_RECIPIENT'){
+            client.service('send_tracking_page_sms').create({'taskId': updatedTask.id, 'phone': this.updatedTask.attrs.phone});
+          }
+        }    
       } else if (state === 3){
         let deliveries = this.deliveries;
         let historyDeliveries = this.taskHistory;

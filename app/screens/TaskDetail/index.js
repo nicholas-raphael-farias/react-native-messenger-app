@@ -72,6 +72,19 @@ class TaskDetail extends React.Component {
     return MessengerStore.selectedTask;
   }
 
+  @computed get messengerVehicle(){
+    const vehicleIndex = MessengerStore.messenger.vehicle;
+    let vehicleString;
+    if (vehicleIndex === "0") {
+      vehicleString="walking";
+    } else if (vehicleIndex === "1") {
+      vehicleString="bicycling";
+    } else {
+      vehicleString="driving";
+    }
+    return vehicleString;
+  }
+
   async completeTask(){
     await MessengerStore.changeState(this.state.task['id'], 3);
     if(!this.state.wasCorrectlyFinished){
@@ -81,6 +94,7 @@ class TaskDetail extends React.Component {
   }
 
   async startTask(){ 
+    console.warn(this.state.task['id']);
     await MessengerStore.changeState(this.state.task['id'], 2);
   }
 
@@ -105,7 +119,7 @@ class TaskDetail extends React.Component {
             <Col>
               <Text style={styles.taskAddress}>{this.state.task.attrs.address}</Text>
             </Col>
-            <Col style={{ width: 80 }} onPress={() => Linking.openURL(`http://maps.google.com/?daddr=${this.state.task.attrs.address.replace(' ','+')}`)}>
+            <Col style={{ width: 80 }} onPress={() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${this.state.task.attrs.address.replace(' ','+')}&travelmode=${this.messengerVehicle}`)}>
               <TouchableOpacity>
                 <Image 
                   style={styles.listIcon} 
