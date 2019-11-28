@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import { Container, List, ListItem, Text} from 'native-base';
+import { Container, List, ListItem, Text, Body, Left, Right} from 'native-base';
 import { Col, Row, Grid } from 'react-native-easy-grid';
 import { StyleSheet, View, ScrollView, Image } from 'react-native';
 
@@ -19,13 +19,6 @@ const NotActiveMessage = () => (
 @observer
 class Tasklist extends React.Component {
 
-  componentDidMound(){
-    const locationPermition = MessengerStore.locationPermition;
-    if (!locationPermition) {
-      MessengerStore.requestLocationPermission()
-    }
-  }
-
   isEmpty(obj) {
     for(var key in obj) {
       if(obj.hasOwnProperty(key))
@@ -34,35 +27,82 @@ class Tasklist extends React.Component {
     return true;
   }
 
-  @computed get deliveries(){
-    let deliveries = MessengerStore.deliveries;
+  @computed get reminders(){
+    let reminders = MessengerStore.reminders
+    let filters = MessengerStore.filters
+    let result = []
 
-    let deliveriesList = deliveries.map(delivery => {
-      if (delivery.tasks) {
-        return(delivery.tasks.map(task => 
-          <ListItem style={styles.listItem} onPress={() => {
-            MessengerStore.setSelectedTask(task);
-            this.props.navigation.navigate('TaskDetail', {task: task});
-          }}>
-            <Image 
-              style={styles.listIcon} 
-              source={ 
-                task.state === 0 ? 
-                require('./img/assigned_task.png') : 
-                require('./img/started_task.png')
-              }
-            />
-            <Text 
-              numberOfLines={1} 
-              style={styles.listAddress}>
-              {task.attrs.address}
-            </Text>
-            <Text style={styles.listText}>
-              Entregar con: {task.attrs.recipient}
-            </Text>
-          </ListItem>
-        ));
-      }
+    if (filters.length > 0) {
+        result = 
+          filters.reduce((accumulator, currentValue, currentIndex, array) => {
+            let filtered = []
+            switch (currentValue.type) {
+              case 1:
+                filtered = 
+                  reminders.filter(r => 
+                  r.d.getDate() === currentValue.date.getDate() &&
+                  r.d.getMonth() === currentValue.date.getMonth() &&
+                  r.d.getYear() === currentValue.date.getYear())
+                break;
+              case 2:
+                if(currentValue.final_date == null){
+                  console.warn("es null")
+                 
+                } else {
+                  console.warn("es not null")
+                   filtered = reminders.filter(
+                    r => r.d.getTime() >= currentValue.initial_date.getTime() &&
+                    r.d.getTime() <= currentValue.final_date.getTime())
+                }
+                break;
+              case 3:
+                filtered = reminders.filter(
+                  r => r.d.getMonth() === currentValue.date.getMonth())
+                break;
+              case 4:
+                filtered = reminders.filter(
+                  r => r.d.getYear() === currentValue.date.getYear())
+                break;
+              case 5:
+                filtered = reminders.filter(
+                  r => r.type === currentValue.filter_type)
+                break;
+              default:
+                break;
+            }
+            accumulator = accumulator.concat(filtered)
+            return accumulator
+          },[])
+
+        //console.warn("result")
+        //console.warn(result)
+    } else {
+      result = reminders
+    }
+
+
+
+
+
+
+
+    let deliveriesList = result.map(reminder => {
+      return(
+        <ListItem style={styles.listItem} onPress={() => {
+          MessengerStore.setSelectedReminder(reminder)
+          this.props.navigation.navigate('Detalle', {reminder: reminder})
+        }}>
+          <Body>
+            <Text style={styles.listText}>{reminder.type}</Text>
+            <Text note>{reminder.status}</Text>
+          </Body>
+          <Right>
+            <Text style={styles.listText} note>{reminder.date}</Text>
+            <Text style={styles.listText}>{reminder.hour}</Text>
+          </Right>
+
+        </ListItem>
+      )
     });
 
     return (
@@ -70,10 +110,6 @@ class Tasklist extends React.Component {
         <List>{deliveriesList}</List>
       </ScrollView>
     );
-  }
-
-  @computed get onDutyStatus() {
-    return MessengerStore.onDuty;
   }
 
   @computed get onPositionUpdate() {
@@ -84,13 +120,14 @@ class Tasklist extends React.Component {
   render() {
     return (
       <Container style={styles.container}>
-        <Grid style={{marginLeft: 0, paddingLeft: 0}}>
-          <Row style={styles.titleContainer}>
-            <Text style={styles.listTitle}>Lista de tareas</Text>
-          </Row>
+        <Grid style={{}}>
+          {//<Row style={styles.titleContainer}>
+            //<Text style={styles.listTitle}>Lista de tareas</Text>
+            //</Row>
+          }
           <Row>
-            <Col style={{marginLeft: 0, paddingLeft: 0}}>
-              { MessengerStore.onDuty ? this.deliveries : <NotActiveMessage/> }
+            <Col style={{}}>
+              {this.reminders}
             </Col>
           </Row>
         </Grid>
@@ -105,15 +142,11 @@ const styles = StyleSheet.create({
   },
   listItem:{
     marginLeft: 0,
-    paddingLeft: 40,
     borderColor: '#494c47',
     height: 80,
   },
   listText:{
     color: 'white',
-    position: 'absolute',
-    top:40,
-    left:48,
   },
   listAddress:{
     color: 'white',

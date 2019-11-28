@@ -1,373 +1,210 @@
 import {observable, computed, action} from 'mobx';
 
-import io from 'socket.io-client';
-import feathers from '@feathersjs/feathers';
-import socketio from '@feathersjs/socketio-client';
-import NewPassword from '../screens/NewPassword';
+import {PermissionsAndroid, Platform} from 'react-native';
+import Contacts from "react-native-contacts";
 
-import Geolocation from 'react-native-geolocation-service';
-import {PermissionsAndroid} from 'react-native';
 
-const API_URL = 'https://98a2af92.ngrok.io';
-
-const socket = io(API_URL, {
-  transports: ['websocket'],
-  forceNew: true
-});
-
-const client = feathers();
-client.configure(socketio(socket));
+const getMonth = (month) => {
+  switch (month) {
+    case 0:
+      return "Enero"
+      break;
+    case 1:
+      return "Febrero"
+      break;
+    case 2:
+      return "Marzo"
+      break;
+    case 3:
+      return "Abril"
+      break;
+    case 4:
+        return "Mayo"
+        break;
+    case 5:
+        return "Junio"
+        break;
+    case 6:
+      return "Julio"
+      break;
+    case 7:
+      return "Agosto"
+      break;
+    case 8:
+      return "Septiembre"
+      break;
+    case 9:
+      return "Octubre"
+      break;
+    case 10:
+      return "Noviembre"
+      break;
+    case 11:
+      return "Diciembre"
+      break;
+    default:
+      break;
+  }
+}
 
 class MessengerStore {
-  @observable phone;
-  @observable password;
-  @observable auxPhone;
-  @observable auxPassword;
-  @observable isLogged = false;
-  @observable isActive = false;
-  @observable onDuty = false;
-  @observable messenger;
-  @observable deliveries = [];
-  @observable taskHistory = [];
-  @observable locationId;
-  @observable watchID;
-  @observable currentTimestamp = 0;
-  @observable latitude;
-  @observable longitude;
-  @observable newPassword;
-  @observable newPasswordRepeat;
-  @observable selectedTask;
-  @observable selectedHistoryTask;
-  @observable locationPermition;
-  @observable locationResponseTest;
-  @observable deliveriesService;
-  @observable tasksService;
-  @observable messengersService;
-  @observable locationsService;
 
   constructor(){
-    client.service('deliveries').on('patched', patchedDelivery => {
-
-      if(patchedDelivery.state === -1) {
-
-        const deliveryIndex = this.deliveries.findIndex(delivery => (delivery.id === patchedDelivery.id));
-        if (deliveryIndex !== -1) {
-          this.deliveries.splice(deliveryIndex,1); 
-        }
-      } else if(patchedDelivery.messengerId === this.messenger.id) {
-
-        client.service('deliveries_and_tasks').find({'query': {'deliveryId': patchedDelivery.id}}).then((deliveryWithTasks) => {
-          console.warn(deliveryWithTasks);
-          let delivery = deliveryWithTasks[0];
-          let tasks = delivery.tasks.sort((a, b) => parseInt(a.order) - parseInt(b.order));
-          tasks.forEach(task => task.state = 1);
-          delivery.tasks = tasks;
-          console.warn(delivery.tasks);
-          this.deliveries.push(delivery);
-        });
-
-      }
-    });
-
-    client.service('autoassign_signal').on('status', data => {
-      client.service('deliveries_and_tasks').find({'query': {'deliveryId': data.deliveryId}}).then((deliveryWithTasks) => {
-      console.warn(deliveryWithTasks);
-      let deliveries = this.deliveries;
-      const index = deliveries.findIndex(({id}) => id === data.deliveryId);
-      let delivery = deliveries[index];
-      let filteredTasks = deliveryWithTasks[0].tasks.filter(task => task.state !== 3);
-      delivery.tasks = filteredTasks.sort((a, b) => parseInt(a.order) - parseInt(b.order));
-      deliveries[index] = delivery;
-      this.deliveries = deliveries;
-      });
-    });
-
-  }
-
-
-  @action setLogOut() {
-    this.isLogged = false;
-  }
-
-
-  @action setPhone(phone) {
-    this.phone = phone;
-  }
-
-  @action setPassword(password) {
-    this.password = password;
-  }
-
-  @action setAuxPhone(phone) {
-    this.auxPhone = phone;
-  }
-
-  @action setAuxPassword(password) {
-    this.auxPassword = password;
-  }
-
-  @action setAuxIsLogged(logged) {
-    this.auxIsLogged = logged;
-  }
-
-  @action setMessenger(messenger) {
-    this.messenger = messenger;
-  }
-
-  @action setDeliveries(deliveries) {
-    this.deliveries = deliveries;
-  }
-
-  @action setNewPassword(password) {
-    this.newPassword = password;
-  }
-
-  @action setNewPasswordRepeat(password) {
-    this.newPasswordRepeat = password;
-  }
-
-  @action setSelectedTask(task) {
-    this.selectedTask = task;
-  }
-
-  @action setSelectedHistoryTask(task) {
-    this.selectedHistoryTask = task;
-  }
-
-  @action async updatePassword() {
-    this.isLogged = false;
-    
-    await  client.service('messengers').patch(this.messenger.id, {'password': this.newPassword, 'is_active': true}).then((result) => {
-    });
-  }
-
-  @action async updateLocation(location) {
-    console.warn('updateLocation');
-    client.service('locations')
-    .patch(this.messenger.locationId, {
-      'latitude': location.coords.latitude, 
-      'longitude': location.coords.longitude
-    }).then(() => {
-      this.locationResponseTest = location;
-    })
-    .catch(error => {
-      console.warn('error');
-      console.warn(error);
-    });
-  }
- 
-  @action errorGeolocating(error) {
-    console.warn(error);
-  }
-
-  @action async requestLocationPermission() {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Location Permission',
-          message:
-            'Cool Photo App needs access to your camera ' +
-            'so you can take awesome pictures.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        this.locationPermition = true;
-        console.warn('You can use the camera');
-      } else {
-        console.warn('Camera permission denied');
-      }
-    } catch (err) {
-      console.warn(err);
-    }
-  }
-  
-  @action changeDutyStatus(status){
-    if (status) {
-
-      Geolocation.getCurrentPosition(
-        (position) => {
-            //console.warn(position);
-            //console.warn(this.messenger);
-            client.service('locations')
-            .patch(this.messenger.locationId, {
-              'latitude': position.coords.latitude, 
-              'longitude': position.coords.longitude
-            }).then(() => {
-
-              client.service('update_messenger_status')
-              .patch(this.messenger.id, {
-                'on_duty': status
-              }).then(() => {
-                this.onDuty = status;
-
-                this.watchID = Geolocation.watchPosition(
-                  (l) => this.updateLocation(l), 
-                  (e) => this.errorGeolocating(e),
-                  {
-                    enableHighAccuracy: true, 
-                    distanceFilter: 25
-                });
-
-              });
-
-            });
-        },
-        (error) => {
-            // See error code charts below.
-            console.warn(error.code, error.message);
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-    );
-      
-    } else {
-      client.service('update_messenger_status').patch(this.messenger.id, {'on_duty': status}).then(() => {
-        Geolocation.clearWatch(this.watchID);
-        Geolocation.stopObserving();
-        this.onDuty = status;
-      });
-
-    }
-  }
-
-  @action async authMessenger() {
-    this.messengersService = client.service('messengers');
-    this.deliveriesService = client.service('messenger_deliveries');
-    this.historyService = client.service('messenger_history');
-
-    await this.messengersService.find({'query': {'phone': this.phone, 'password': this.password}}).then((result) => {
-      if (result.length > 0) {
-        this.messenger = result[0];
-        this.isActive = this.messenger.is_active;
-        this.onDuty = this.messenger.on_duty;
-        this.isLogged = true;
-        this.deliveriesService.find({'query': {'messengerId': this.messenger.id}}).then(deliveries => {
-          let deliveriess = deliveries.map(delivery => {
-            delivery.tasks = delivery.tasks.sort(function(task_a, task_b) {
-              return task_a.order - task_b.order;
-            });
-            return delivery;
-          });
-          this.deliveries = deliveriess;
-        });
-
-        this.historyService.find({'query':{'messengerId': this.messenger.id}}).then((deliveries) => {
-          this.taskHistory = deliveries;
-        });
-  
-
-
-        if(this.isActive && this.onDuty){
-          this.watchID = Geolocation.watchPosition(
-            (l) => this.updateLocation(l), 
-            (e) => this.errorGeolocating(e),
-            {
-              enableHighAccuracy: true, 
-              distanceFilter: 25
-          });
-
-        }
-      } else {
-        this.phone = '';
-        this.password = '';
-      }
-    });
-  }
-
-  @action async auxAuthMessenger() {
-    this.messengersService = client.service('messengers');
-    this.deliveriesService = client.service('messenger_deliveries');
-    this.historyService = client.service('messenger_history');
-
-    await this.messengersService.find({'query': {'phone': this.auxPhone, 'password': this.auxPassword}}).then((result) => {
-      if (result.length > 0) {
-        this.messenger = result[0];
-        this.isActive = this.messenger.is_active;
-        this.onDuty = this.messenger.on_duty;
-        this.auxIsLogged = true;
-        this.deliveriesService.find({'query': {'messengerId': this.messenger.id}}).then(deliveries => {
-          this.deliveries = deliveries;
-        });
-
-        this.historyService.find({'query':{'messengerId': this.messenger.id}}).then((deliveries) => {
-          this.taskHistory = deliveries;
-        });
-  
-
-
-        if(this.isActive && this.onDuty){
-          this.watchID = Geolocation.watchPosition(
-            (l) => this.updateLocation(l), 
-            (e) => this.errorGeolocating(e),
-            {
-              enableHighAccuracy: true, 
-              distanceFilter: 25
-          });
-
-        }
-      } else {
-        this.auxPhone = '';
-        this.auxPassword = '';
-      }
-    });
-  }
-
-  @action async changeState(taskId, state) {
-    this.tasksService = client.service('update_task_state');
-
-    await this.tasksService.patch(taskId, {'state': state}).then((updatedTask) => {
-      let updatedDeliveries = this.deliveries.map(delivery => {
-        let tasks = delivery.tasks;
-        const taskIndex = tasks.findIndex(({id}) => id === updatedTask.id);
-        if (taskIndex !== -1) {
-          let task = tasks[taskIndex];
-          task['state'] = updatedTask['state'];
-          tasks[taskIndex] = task;
-        }
-        delivery.tasks = tasks;
-        return delivery;
-      });
-
-      this.deliveries = updatedDeliveries;
-
-      if (state === 2) {
-
-        if(this.updatedTask.attrs.recipient !== undefined){
-
-          if(this.updatedTask.attrs.recipient !== 'NO_RECIPIENT'){
-            client.service('send_tracking_page_sms').create({'taskId': updatedTask.id, 'phone': this.updatedTask.attrs.phone});
+    if (Platform.OS === "android") {
+      PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.READ_CONTACTS, {
+        title: "Contacts",
+        message: "Quiero ver tus contactos."
+      }).then(() => {
+        
+        Contacts.getAll((err, contacts) => {
+          if (err === "denied") {
+            console.warn("Permission to access contacts was denied");
+          } else {
+            console.warn(contacts)
+            this.contacts = contacts
           }
-        }    
-      } else if (state === 3){
-        let deliveries = this.deliveries;
-        let historyDeliveries = this.taskHistory;
+        });
 
-        let updatedDeliveryIndex = deliveries.findIndex(({id}) => id === updatedTask.deliveryId);
-        let updatedDelivery = deliveries[updatedDeliveryIndex];
-        let taskIndex = updatedDelivery.tasks.findIndex(({id}) => id === updatedTask.id);
-        let task = updatedDelivery.tasks[taskIndex];
 
-        historyDeliveries.push({tasks: [task]});
-        this.taskHistory = historyDeliveries;
-
-        updatedDelivery.tasks.splice(taskIndex, 1);
-        deliveries[updatedDeliveryIndex] = updatedDelivery;
-
-        this.deliveries = deliveries;
-      }
-
-    });
+      });
+    } else {
+    }
   }
 
-  @action changeSuccessStatus(taskId){
-    client.service('tasks')
-    .patch(taskId, {succeded: false})
-    .then((task) => {
-      
-    });
+
+  @observable filters = []
+  @observable filter_type = -1
+  @observable type_opts = [
+    {label:"Cita", value:"cita"}, 
+    {label:"Junta", value:"junta"}, 
+    {label:"Entrega de proyecto", value:"entrega"}, 
+    {label:"Examen", value:"examen"},
+    {label:"Otro", value:"otro"},
+  ]
+  @observable status_opts = [
+    {label:"Pendiente", value:"pendiente"},
+    {label:"Realizado", value:"realizado"},
+    {label:"Aplazado", value:"aplazado"},
+  ]
+  @observable reminders = [
+  ];
+  @observable modals = {
+    date_modal: false,
+    time_modal: false,
+    filter_day_modal: false,
+    type_modal: false,
+  }
+  @observable contacts = [{label:"Contactos", value:"contactos", givenName:"name", recordID:"23234"}]
+  @observable date = new Date()
+  @observable time = new Date()
+  @observable selected_reminder = null
+  @observable type = 'cita'
+  @observable desc = ''
+  @observable status = 'pendiente'
+  @observable contact = {label:"c", value:"c", givenName:"c", recordID:"c"}
+
+  @action createReminder(){
+    let d = this.date
+    let t = this.time
+
+    this.reminders = 
+      this.reminders.concat([{
+        id: '_' + Math.random().toString(36).substr(2, 9),
+        type:this.type, 
+        date:`${d.getDate()} de ${getMonth(d.getMonth())}`, 
+        hour:`${t.getHours()}:${t.getMinutes() === 0 ? "00" : t.getMinutes()}`, 
+        d: d,
+        t: t,
+        desc:this.desc, 
+        status:this.status, 
+        contact:this.contact
+      }])
+
+    this.type='cita'
+    this.date=new Date()
+    this.time=new Date()
+    this.desc = ''
+    this.status = 'pendiente'
+    this.contact = {label:"c", value:"c", givenName:"c", recordID:"c"}
+  }
+
+  @action changeModalVisibility(modal, is_visible) {
+    switch (modal) {
+      case "date_modal":
+        this.modals.date_modal = is_visible
+        break;
+
+      case "time_modal":
+          this.modals.time_modal = is_visible
+        break
+
+      case "filter_day":
+        this.modals.filter_day_modal = is_visible
+        break;
+
+      case "type_modal":
+        this.modals.type_modal = is_visible
+        break;
+    
+      default:
+        break;
+    }
+  }
+
+  @action changeValue(key, value){
+    this[key] = value
+  }
+
+  @action addDayFilter(date){
+    if(this.filter_type === 1 || this.filter_type === 3 || this.filter_type === 4){
+      this.filters = this.filters.concat([{type:this.filter_type, date: date}])
+      this.modals.filter_day_modal = false
+      this.filter_type = -1
+    } else if(this.filter_type === 2) {
+      let f = this.filters.filter(f => f.type === 2 && f.final_date === null)
+      if(f.length === 0) {
+        this.modals.filter_day_modal = false
+        this.filters = this.filters.concat([{type:2, initial_date: date, final_date: null}])
+        setTimeout(() => {
+          this.modals.filter_day_modal = true
+          }, 1000);
+      } else {
+        f[0].final_date = date
+        let i = this.filters.findIndex(f => f.type === 2 && f.final_date === null)  
+        this.filters[i] = f[0]
+        this.modals.filter_day_modal = false
+        this.filter_type = -1
+      }
+    }
+  }
+
+  @action addTypeFilter(type) {
+    this.filters = this.filters.concat([{type: this.filter_type, filter_type: type}])
+    this.filter_type = -1
+    this.modals.type_modal = false
+  }
+
+  @action setSelectedReminder(reminder){
+    this.selected_reminder = reminder
+  }
+
+  @action changeStatus(id, value){
+    let reminder = this.reminders.find(r => r.id === id)
+    let reminder_index = this.reminders.findIndex(r => r.id === id)
+    reminder.status = value
+    this.reminders[reminder_index] = reminder
+  }
+
+  @action changeContact(id, value){
+    let reminder = this.reminders.find(r => r.id === id)
+    let reminder_index = this.reminders.findIndex(r => r.id === id)
+    reminder.contact = value
+    this.reminders[reminder_index] = reminder
+  }
+
+  @action deleteReminder(id){
+    let index = this.reminders.findIndex(r => r.id === id)
+    this.reminders.splice(index, 1)
   }
 
 }

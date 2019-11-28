@@ -7,7 +7,7 @@ import {computed} from 'mobx';
 import {observer} from 'mobx-react';
 
 @observer
-class TestHeader extends React.Component {
+class AgendaHeader extends React.Component {
 
 
   componentDidMount(){
@@ -35,14 +35,16 @@ class TestHeader extends React.Component {
               <Icon style={styles.icon} name='menu'/>
             </TouchableOpacity>
           </Left>
-          <Body style={{flex:1, paddingLeft:56}}>
-            <Switch
-              value={this.onDutyStatus} 
-              thumbColor={this.onDutyStatus ? '#1f8cce' : '#3e3f3d'}
-              onValueChange={this.changeStatusDuty}/>
+          <Body style={{flex:1, paddingLeft:16}}>
+            <Text style={styles.listTitle}>Recordatorios</Text>
           </Body>
           <Right style={{flex:1}}>
-            <Text></Text>
+
+            <TouchableOpacity onPress={() =>{
+              this.props.navigation.navigate('Formulario');
+            }}>
+              <Icon style={styles.icon} name='add'/>
+            </TouchableOpacity>
           </Right>
         </Header>
       );
@@ -56,7 +58,12 @@ const styles = StyleSheet.create({
   },
   icon:{
     color: '#FFF',
-  }
+  },
+  listTitle:{
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
 
-export default TestHeader;
+export default AgendaHeader;

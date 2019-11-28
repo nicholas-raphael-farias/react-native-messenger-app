@@ -8,7 +8,8 @@ import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
-import com.agontuk.RNFusedLocation.RNFusedLocationPackage;
+import com.rt2zz.reactnativecontacts.ReactNativeContacts; // <--- import
+//import com.agontuk.RNFusedLocation.RNFusedLocationPackage;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,7 +27,8 @@ public class MainApplication extends Application implements ReactApplication {
       return Arrays.<ReactPackage>asList(
         new MainReactPackage(),
         new RNGestureHandlerPackage(),
-        new RNFusedLocationPackage()
+        new ReactNativeContacts()
+//        new RNFusedLocationPackage()
       );
     }
 
